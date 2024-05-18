@@ -82,18 +82,31 @@ final class PostProcessorRegistrationDelegate {
 		// https://github.com/spring-projects/spring-framework/issues?q=PostProcessorRegistrationDelegate+is%3Aclosed+label%3A%22status%3A+declined%22
 
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
+		// 无论是什么情况，优先执行BeanDefinitionRegistryPostProcessors
+		// 将已经执行过的BFPP存储在processedBeans中，防止重复执行
 		Set<String> processedBeans = new HashSet<>();
 
+		// 判断beanFactory是否是BeanDefinitionRegistry类型，此处是DefaultListableBeanFactory，实现了BeanDefinitionRegistry接口，所以为true
 		if (beanFactory instanceof BeanDefinitionRegistry registry) {
+			// 此处希望大家做一个区分，两个接口是不同的，BeanDefinitionRegistryPostProcessor是BeanFactoryPostProcessor的子集
+			// BeanFactoryPostProcessor主要针对的操作对象是BeanFactory，而BeanFactoryRegistryPostProcessor主要针对的操作对象是BeanDefinition
+			// 存放BeanFactoryPostProcessor的集合
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+			// 存放BeanDefinitionRegistryPostProcessor的集合
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			// 首先处理入参中的beanFactoryPostProcessors,遍历所有的beanFactoryPostProcessors,将BeanDefinitionRegistryPostProcessor
+			// 和BeanFactoryPostProcessor区分开
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+				// 如果是BeanDefinitionRegistryPostProcessor
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor registryProcessor) {
+					// 直接执行BeanDefinitionRegistryPostProcessor接口中的postProcessBeanDefinitionRegistry方法
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
+					// 添加到registryProcessors，用于后续执行postProcessBeanFactory方法
 					registryProcessors.add(registryProcessor);
 				}
 				else {
+					// 否则，只是普通的BeanFactoryPostProcessor,添加到regularPostProcessors，用于后续执行postProcessBeanFactory方法
 					regularPostProcessors.add(postProcessor);
 				}
 			}
@@ -102,20 +115,31 @@ final class PostProcessorRegistrationDelegate {
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
+			// 用于保存本次要执行的BeanDefinitionRegistryPostProcessor
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+			// 调用所有实现PriorityOrdered接口的BeanDefinitionRegistryPostProcessor实现类
+			// 找到所有实现BeanDefinitionRegistryPostProcessor接口bean的beanName
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+			// 遍历处理所有符合规则的postProcessorNames
 			for (String ppName : postProcessorNames) {
+				// 检测是否实现了PriorityOrdered接口
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+					// 获取名字对应的bean实例，添加到currentRegistryProcessors中
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+					// 将要被执行的BFPP添加到processedBeans，避免后续重复执行
 					processedBeans.add(ppName);
 				}
 			}
+			// 按照优先级进行排序操作
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
+			// 添加到registryProcessors中，用于最后执行postProcessBeanFactory方法
 			registryProcessors.addAll(currentRegistryProcessors);
+			// 遍历currentRegistryProcessors，执行postProcessBeanDefinitionRegistry方法
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry, beanFactory.getApplicationStartup());
+			// 执行完毕之后，清空currentRegistryProcessors
 			currentRegistryProcessors.clear();
 
 			// Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
