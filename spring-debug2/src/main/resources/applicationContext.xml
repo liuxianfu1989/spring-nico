@@ -15,7 +15,11 @@
 ">
 <!--	<bean class="com.nico.test.MyBeanFactoryPostProcessor" ></bean>-->
 
-	<msb:user id="msb" username="nico" email="nico@msb.com" password="123456"/>
+<!--	<msb:user id="msb" username="nico" email="nico@msb.com" password="123456"/>-->
+
+<!--	<context:component-scan base-package="com.nico" />-->
+
+	<bean class="com.nico.selfbdrpp.MyBeanDefinitionRegistryPostProcessor"></bean>
 
 	<context:property-placeholder location="classpath:db.properties"/>
 
