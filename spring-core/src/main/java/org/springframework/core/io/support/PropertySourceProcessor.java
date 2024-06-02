@@ -88,7 +88,9 @@ public class PropertySourceProcessor {
 
 		for (String location : locations) {
 			try {
+				// 处理属性值的占位符
 				String resolvedLocation = this.environment.resolveRequiredPlaceholders(location);
+				// 将指定位置的资源转换成resource对象集合，并遍历添加resource对象为属性资源
 				for (Resource resource : this.resourcePatternResolver.getResources(resolvedLocation)) {
 					addPropertySource(factory.createPropertySource(name, new EncodedResource(resource, encoding)));
 				}

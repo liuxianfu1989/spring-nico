@@ -299,7 +299,7 @@ class ConfigurationClassParser {
 	protected final SourceClass doProcessConfigurationClass(
 			ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
 			throws IOException {
-
+		// Configuration继承类@Component
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
 			// Recursively process any member (nested) classes first
 			// 首先处理内部类，处理内部类时，最终还是调用doProcessConfigurationClass()方法
@@ -415,26 +415,35 @@ class ConfigurationClassParser {
 	private void processMemberClasses(ConfigurationClass configClass, SourceClass sourceClass,
 			Predicate<String> filter) throws IOException {
 
+		// 找到内部类，内部类中也可能是一个配置类
 		Collection<SourceClass> memberClasses = sourceClass.getMemberClasses();
+		// 如果不等于空的话
 		if (!memberClasses.isEmpty()) {
 			List<SourceClass> candidates = new ArrayList<>(memberClasses.size());
+			// 循环判断内部类是不是配置类
 			for (SourceClass memberClass : memberClasses) {
 				if (ConfigurationClassUtils.isConfigurationCandidate(memberClass.getMetadata()) &&
 						!memberClass.getMetadata().getClassName().equals(configClass.getMetadata().getClassName())) {
 					candidates.add(memberClass);
 				}
 			}
+			// 对配置类进行排序操作
 			OrderComparator.sort(candidates);
+			// 遍历符合规则的类
 			for (SourceClass candidate : candidates) {
 				if (this.importStack.contains(configClass)) {
+					// 出现配置类循环导入，则直接报错
 					this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
 				}
 				else {
+					// 将配置类入栈
 					this.importStack.push(configClass);
 					try {
+						// 调用processConfigurationClass方法，因为内部类中还可能包含内部类，所以需要在做循环解析，实际工作中是不会有这种情况的
 						processConfigurationClass(candidate.asConfigClass(configClass), filter);
 					}
 					finally {
+						// 解析完出栈
 						this.importStack.pop();
 					}
 				}

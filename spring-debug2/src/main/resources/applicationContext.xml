@@ -17,7 +17,7 @@
 
 <!--	<msb:user id="msb" username="nico" email="nico@msb.com" password="123456"/>-->
 
-	<context:component-scan base-package="com.nico" />
+	<context:component-scan base-package="com.nico.config,com.nico.shouldSkip" />
 
 <!--	<bean class="com.nico.selfbdrpp.MyBeanDefinitionRegistryPostProcessor"></bean>-->
 
